@@ -53,7 +53,9 @@
     };
 
     messageEmitter.addListener("set-options", (data) => {
-      Object.assign(options, data.options, { automaticLayout: true });
+      if (data.theme === "system-preference") data.theme = getTheme();
+
+      Object.assign(options, data, { automaticLayout: true });
     });
 
     const overrides = {};
@@ -92,14 +94,14 @@
       editor.onDidChangeModelContent(() => {
         const value = editor.getValue();
 
-        invokeMessage("value-change", { value });
+        invokeMessage("value-change", value);
       });
 
       messageEmitter.addListener("set-value", ({ value }) => {
         editor.setValue(value);
       });
 
-      messageEmitter.addListener("update-options", ({ options }) => {
+      messageEmitter.addListener("update-options", (options) => {
         if (options.theme === "system-preference") options.theme = getTheme();
 
         editor.updateOptions(options);
