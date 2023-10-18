@@ -103,6 +103,9 @@
 
       messageEmitter.addListener("update-options", (options) => {
         if (options.theme === "system-preference") options.theme = getTheme();
+        if (options.language) {
+          monaco.editor.setModelLanguage(editor.getModel(), options.language);
+        };
 
         editor.updateOptions(options);
       });
