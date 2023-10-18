@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Editor</title>
+</head>
+<body>
+  <div id="editor"></div>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/EventEmitter/5.2.8/EventEmitter.min.js"></script>
+  <script>
+    "use strict";
+    const messageEmitter = new EventEmitter();
+
+    function invokeMessage(type, data = {}) {
+      window.postMessage({ type, data }, "*");
+    };
+  </script>
+  <script>
+    "use strict";
+
+    window.addEventListener("message", (event) => {
+      if (!(typeof event === "object" && event.data)) {
+        return;
+      };
+
+      const { type, ...data } = event.data;
+
+      if (!type) return;
+
+      messageEmitter.emit(type, data);
+    });
+  </script>
+  <script>
+    function getTheme() {
+      return window.matchMedia("(prefers-color-scheme: dark)").matches ? "vs-dark" : "vs";
+    };
+
+    const options = {
+      automaticLayout: true,
+      theme: getTheme()
+    };
+
+    messageEmitter.addListener("set-options", (data) => {
+      Object.assign(options, data.options, { automaticLayout: true });
+    });
+
+    const overrides = {};
+  </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.1/require.min.js"></script>
+  <script>
+    "use strict";
+    const MONACO_VERSION = "0.44.0";
+
+    require.config({
+      paths: {
+        vs: `https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/${MONACO_VERSION}/min/vs`
+      }
+    });
+
+    window.MonacoEnvironment = {
+      getWorkerUrl(workerId, label) {
+        return `data:text/javascript;charset=utf-8,${encodeURIComponent(
+          `
+        self.MonacoEnvironment = {
+          baseUrl: "https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/${MONACO_VERSION}/min/"
+        };
+        importScripts("https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/${MONACO_VERSION}/min/vs/base/worker/workerMain.js");`
+        )}`;
+      }
+    };
+
+    const node = document.getElementById("editor");
+    require(["vs/editor/editor.main"], (monaco) => {
+      const editor = monaco.editor.create(node, options, overrides);
+
+      window.editor = editor;
+
+      editor.onDidChangeModelContent(() => {
+        const value = editor.getValue();
+
+        invokeMessage("value-change", { value });
+      });
+
+      messageEmitter.addListener("set-value", ({ value }) => {
+        editor.setValue(value);
+      });
+
+      messageEmitter.addListener("update-options", ({ options }) => {
+        if (options.theme === "system-preference") options.theme = getTheme();
+
+        editor.updateOptions(options);
+      });
+
+      invokeMessage("ready");
+    });
+  </script>
+  <style>
+    #editor {
+      margin: 0;
+      height: 100%;
+      width: 100%;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      position: fixed;
+    }
+  </style>
+</body>
+</html>
