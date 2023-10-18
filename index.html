@@ -9,11 +9,14 @@
   <div id="editor"></div>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/EventEmitter/5.2.8/EventEmitter.min.js"></script>
   <script>
+    console.log("doggybootsy-editor v2");
+  </script>
+  <script>
     "use strict";
     const messageEmitter = new EventEmitter();
 
     function invokeMessage(type, data = {}) {
-      window.postMessage({ type, data }, "*");
+      window.top.postMessage({ type, data, source: "doggybootsy-editor" }, "*");
     };
   </script>
   <script>
@@ -24,7 +27,9 @@
         return;
       };
 
-      const { type, ...data } = event.data;
+      const { type, to, ...data } = event.data;
+
+      if (to !== "doggybootsy-editor") return;
 
       if (!type) return;
 
