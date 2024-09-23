@@ -110,7 +110,7 @@
         editor.updateOptions(options);
       });
 
-      invokeMessage("ready");
+      queueMicrotask(() => invokeMessage("ready"));
     });
   </script>
   <style>
